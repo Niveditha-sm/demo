@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <link href="cal.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+    
+    <div id="app" >
+        
+    <header>
+       <table id="show"  >
+       <img src="delete.png"class="history" @click="deleteall()">
+       <img  src="history.png"  class="history" @click="showhistory()"  >
+       </table>  <div class="flex_1">
+       <div class="f1" id="display" v-show="true">{{this.calculator.displayValue}}{{calculator.operator}}</div>
+       </div>
+        
+</header>
+
+<!-- <form id="app1"> -->
+  <div class="flex_2">
+    <div class="f3" @click="expressions" >AC</div>
+    <div class="f4"  @click="expressions">+/-</div>
+    <div class="f5"  @click="expressions">%</div>
+    <div class="f6 orange"  @click="expressions">/</div>
+</div>
+<div class="flex_2">
+    <div class="gy"  @click="expressions">7</div>
+    <div class="gy" @click="expressions">8</div>
+    <div class="gy" @click="expressions">9</div>
+    <div class="f6 orange" @click="expressions">*</div>
+</div>
+<div class="flex_2">
+    <div class="gy"  @click="expressions">4</div>
+    <div class="gy" @click="expressions" >5</div>
+    <div class="gy"  @click="expressions">6</div>
+    <div class="f6 orange"  @click="expressions">-</div>
+</div>
+<div class="flex_2">
+    <div class="gy"  @click="expressions">1</div>
+    <div class="gy" @click="expressions">2</div>
+    <div class="gy" @click="expressions">3</div>
+    <div class="f6 orange" @click="expressions">+</div>
+</div>
+<div class="flex_6">
+    <div  style="width:50%;"@click="expressions">0</div>
+
+    <div style="width:25%;"@click="expressions">.</div>
+    <div class="a7 orange" style="width:25%;" @click="expressions">=</div>
+
+</div>
+<!-- </form> -->
+</div>
+
+
+<script>
+    let vm= new Vue({
+          el: "#app",
+          data: {
+            number:'',
+            isActive: false,
+        
+              calculator: {
+                displayValue: '0',
+                firstOperand: null,
+                waitingForSecondOperand: false,
+                operator: null,
+               },
+            
+          },
+            methods:{
+              expressions(event){
+                if(event){
+                    this.number=event.target.innerHTML;
+                    var number=this.number;
+                    // console.log(number)
+                      switch (number) {
+                         case "AC":this.resetCalculator()
+                         break;
+                         case "0":
+                         case "1": 
+                         case "2": 
+                         case "3": 
+                         case "4": 
+                         case "5": 
+                         case "6": 
+                         case "7":
+                         case "8": 
+                         case "9": this.inputDigit(number)
+                         break;  
+                         case "+": 
+                         this.handleOperator("+")
+                         break;
+                         case "-": this.handleOperator("-")
+                         break;
+                         case "/": this.handleOperator("/")
+                         break;
+                         case "*": this.handleOperator("*")
+                         break;
+                         case "%": this.handleOperator("%")
+                         break;
+                         case "=": this.equalPressed()
+                         break;
+                         case ".": this.inputDecimal(".")
+                         break; 
+                        
+                    }
+                }
+               
+            },
+                showhistory(){
+                    this.isActive = !this.isActive;
+                    var xhttp = new XMLHttpRequest();
+                        xhttp.open("GET", "display.php", true);
+                        xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                        xhttp.send();
+                        xhttp.onreadystatechange = function() {
+                          if (this.readyState == 4 && this.status == 200) {
+                            var data1=JSON.parse(this.responseText);
+                            console.log(data1);
+                            var html="";
+                            for (var i=0;i<data1.length;i++){
+                            var expression=data1[i].expression;
+                            var result1=data1[i].result;
+                            var date=data1[i].date;
+
+                            html+="<tr>";
+                            html+="<td>"+ expression+ "</td>";
+                            html+="<td>"+ result1+ "</td>";
+                            html+="<td>"+date+"</td>";
+
+                               }
+                             document.getElementById("show").innerHTML=html;
+                           
+                            }
+                        };
+                        
+
+                  },
+                    inputDigit(number) {
+                        const { displayValue, waitingForSecondOperand } = this.calculator
+                        //  console.log(waitingForSecondOperand)
+                            if (waitingForSecondOperand === true) {
+                                this.calculator.displayValue = number
+                                this.calculator.waitingForSecondOperand = false
+                            } else {
+                                //  console.log(displayValue)
+                                this.calculator.displayValue =
+                                displayValue === '0' ? number : displayValue + '' + number
+                                    // console.log(displayValue)
+                                } 
+                     },
+                       
+                        handleOperator(nextOperator) {
+                            console.log("The Operator",nextOperator)
+                            var { firstOperand, displayValue, operator, waitingForSecondOperand } = this.calculator
+                            console.log(firstOperand)
+                            // var firstOperand= this.calculator.displayValue;
+                            const inputValue = displayValue
+                            console.log("169",this.calculator.operator)
+                              if (operator && waitingForSecondOperand) {
+                                this.calculator.operator = nextOperator
+                                 console.log(nextOperator)
+                                return
+                                }
+                                   if (firstOperand == null && !isNaN(inputValue)) {
+                                     this.calculator.firstOperand = inputValue
+                                     console.log(inputValue)
+                                      }
+                                        else if (operator) {
+                                            console.log(operator)
+                                            
+                                            const result = this.calculate(firstOperand, inputValue, operator)
+                                            console.log(firstOperand)
+                                            console.log(inputValue)
+                                            console.log(operator)
+                                            console.log(result)
+                                            this.calculator.displayValue = result
+                                            this.calculator.firstOperand = result
+                                           }
+                            
+                                            this.calculator.waitingForSecondOperand = true
+                                            this.calculator.operator = nextOperator
+                             },
+
+                                         inputDecimal(dot) {
+                                            const { displayValue, waitingForSecondOperand } = this.calculator
+                                            console.log(this.calculator)
+                                            console.log(displayValue)
+                                               if (displayValue % 1 === 0) {
+                                                this.calculator.displayValue = this.calculator.displayValue + dot
+                                                }
+                                        },
+                                            equalPressed() {
+                                                if(this.calculator.waitingForSecondOperand==true){
+                                                    this.calculator.displayValue='0'
+                                                    var { firstOperand, displayValue, operator } = this.calculator
+                                                    this.calculator.operator='';
+                                                    console.log(firstOperand)
+                                                           console.log(operator)
+                                                      //     console.log(displayValue)
+                                                     this.calculator.displayValue = this.calculate(firstOperand, displayValue, operator)
+                                              
+                                                    }else{
+                                                        var { firstOperand, displayValue, operator } = this.calculator
+                                                        this.calculator.operator="";
+                                                        console.log(firstOperand)
+                                                        console.log(operator)
+                                                        this.calculator.displayValue = this.calculate(firstOperand, displayValue, operator)
+                                                        this.calculator.firstOperand= this.calculator.displayValue; 
+                                                        this.calculator.displayValue = this.calculate(firstOperand, displayValue, operator)
+                                                        var expression=firstOperand + (operator) + displayValue
+                                                            console.log("expression",expression)
+                                                            var result1=this.calculator.displayValue;
+                                                            console.log(result1)
+                                                            var date=  this.getTodaysFormattedDate() ;
+                                                            console.log(date)
+                                                            var xhttp = new XMLHttpRequest();
+                                                            xhttp.onreadystatechange = function() {
+                                                               if (this.readyState == 4 && this.status == 200) {
+                                                        //    document.getElementById("display").innerHTML = this.responseText;
+                                                                 }
+                                                              };
+                                                                xhttp.open("POST", "cal.php", true);
+                                                                xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                                                                 $finalResult = ("&expression=" + expression + "&result1=" + result1 + "&date="+ date);
+                                                                xhttp.send($finalResult);
+                                                                this.calculator.displayValue = this.calculate(firstOperand, displayValue, operator)
+                                                                console.log(this.calculator.displayValue)
+                                                          }
+                                                 },
+
+                                                         calculate(firstOperand, secondOperand, operator) {
+                                                          //  console.log( firstOperand, operator,secondOperand)
+                                                             if (operator === '+') {
+                                                                return parseFloat(firstOperand) + parseFloat( secondOperand)
+                                                              } else if (operator === '-') {
+                                                                console.log(firstOperand - secondOperand)
+                                                                return firstOperand - secondOperand
+                                                             } else if (operator === '*') {
+                                                                return firstOperand * secondOperand
+                                                             } else if (operator === '/') {
+                                                                return firstOperand / secondOperand
+                                                             } else if (operator === '%') {
+                                                                return firstOperand % secondOperand
+                                                             }
+                                                
+                                                          },
+                                                              
+                                                                            resetCalculator() {
+                                                                                this.calculator.displayValue = '0'
+                                                                                this.calculator.firstOperand = null
+                                                                                this.calculator.waitingForSecondOperand = false
+                                                                                this.calculator.operator = null
+                                                                            },
+                                                                                                    getTodaysFormattedDate() {
+                                                                                                            const today = new Date();
+                                                                                                            const yyyy = today.getFullYear();
+                                                                                                            let mm = today.getMonth() + 1; 
+                                                                                                            let dd = today.getDate();
+                                                                                                            if (dd < 10) dd = '0' + dd;
+                                                                                                            if (mm < 10) mm = '0' + mm;
+                                                                                                            var formattedToday = yyyy + '-' + mm + '-' + dd;
+                                                                                                            return formattedToday;
+                                                                                                        },
+                                                                                                           deleteall(){
+                                                                                                            // alert('hi')
+                                                                                                              var xhttp = new XMLHttpRequest();
+                                                                                                                xhttp.open("GET", "delete.php", true);
+                                                                                                                xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                                                                                                                xhttp.send();
+                                                                                                                xhttp.onreadystatechange = function() {
+                                                                                                                  if (this.readyState == 4 && this.status == 200) {
+
+                                                                                                                  }
+                                                                                                                                                                                                    
+                                                                                                                                                                            
+                                                                                                                }
+                                                                                                               this. showhistory();
+                                                                                                                                                                                                   
+                                                                                                                                                                         
+                                                                                                              },
+                                                         
+          },
+        })
+</script>
+</body>
+</html>
